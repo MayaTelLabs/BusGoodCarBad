@@ -3,8 +3,8 @@
   "capabilities": [
     "configurable"
   ],
-  "companyName": "Yaoyu Yang",
-  "longName": "CatchOneBus",
+  "companyName": "MayaTel Labs/Yaoyu Yang",
+  "longName": "TransitGoodCarBad",
   "resources": {
     "media": [
       {
@@ -31,7 +31,7 @@
     ]
   },
   "sdkVersion": "3",
-  "shortName": "CatchOneBus",
+  "shortName": "TransitGoodCarBad",
   "targetPlatforms": [
     "aplite",
     "basalt",
@@ -41,7 +41,7 @@
   ],
   "uuid": "775e3188-b4f2-4e4b-836a-e02080705ddf",
   "versionCode": 1,
-  "versionLabel": "2.4",
+  "versionLabel": "2.5",
   "watchapp": {
     "watchface": false
   }

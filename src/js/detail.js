@@ -13,7 +13,7 @@ Detail.add = function(title_text, text, title_size) {
     });
     return card;
   } else if (platform.version() === 'aplite' || platform.version() === 'basalt') {
-    var page = new UI.Window({ fullscreen: false, scrollable: true });
+    var page = new UI.Window({ scrollable: true, status: { color: 'white', separator: false } });
     // Create a background Rect
     var bgRect = new UI.Rect({
       position: new Vector2(0, 0),
