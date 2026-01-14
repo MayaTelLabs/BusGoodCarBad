@@ -32,7 +32,7 @@ navigator.geolocation.getCurrentPosition(locationSuccess, locationError);
 
 function locationError(err) {
   console.log('location error (' + err.code + '): ' + err.message);
-  Detail.add('Location Error', "Sorry, we can not determine your location. Make sure turn on location services for Pebble app on your phone.").show();
+  Detail.add('Location Error', "Sorry, we can not determine your location. Make sure you turn on location services for the Pebble app on your phone.").show();
 }
 
 // When location request succeeds
