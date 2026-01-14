@@ -4,103 +4,9 @@ var Save = require('save');
 var Parse = {};
 
 Parse.stopList = function(data, region) {
-  // parse list of raw data from transit api request
   var list = [];
   if (region === "boston") {
-    var all = (data && data.data) || [];
-    var filtered = [];
-    var excludeNameRe = /\b(parking|park(ing)?|park & ride|park-and-ride|lot|garage|entrance|exit)\b/i;
-
-    // Basic Haversine distance (meters)
-    function haversineMeters(lat1, lon1, lat2, lon2) {
-      var toRad = function(v) { return v * Math.PI / 180.0; };
-      var R = 6371000;
-      var dLat = toRad(lat2 - lat1);
-      var dLon = toRad(lon2 - lon1);
-      var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
-
-    function normalizeNameForCompare(n) {
-      if (!n) return '';
-      var s = n.toLowerCase();
-      s = s.replace(/\b(opp|opposite|opp\.)\b/gi, ''); // drop opposite tokens
-      s = s.replace(/[^\w\s]/g, ' '); // remove punctuation
-      s = s.replace(/\s+/g, ' ').trim();
-      return s;
-    }
-
-    for (var i = 0; i < all.length; i++) {
-      var s = all[i];
-      var attrs = s.attributes || {};
-      var name = (attrs.name || '').trim();
-      var locType = (typeof attrs.location_type !== 'undefined') ? attrs.location_type : null;
-      if ((locType === 0 || locType === 4) && name.length > 0 && !excludeNameRe.test(name)) {
-        filtered.push(s);
-      } else {
-        // Helpful debug while tuning
-        // console.log('Boston: excluding stop "' + name + '" (location_type=' + locType + ')');
-      }
-    }
-
-    var deduped = [];
-    var proximityThresholdMeters = 35; // if two stops are within this distance, consider duplicates
-
-    function preferName(newName, existingName) {
-      var badRe = /\b(opp|opposite|opp\.)\b/i;
-      var newBad = badRe.test(newName);
-      var existingBad = badRe.test(existingName);
-      if (newBad && !existingBad) return false;
-      if (!newBad && existingBad) return true;
-      return newName.trim().length <= existingName.trim().length;
-    }
-
-    for (var i = 0; i < filtered.length; i++) {
-      var s = filtered[i];
-      var attrs = s.attributes || {};
-      var name = (attrs.name || '').trim();
-      var norm = normalizeNameForCompare(name);
-      var lat = parseFloat(attrs.latitude || attrs.lat || attrs.location_lat || 0) || null;
-      var lon = parseFloat(attrs.longitude || attrs.lon || attrs.location_lon || 0) || null;
-
-      var merged = false;
-      for (var j = 0; j < deduped.length; j++) {
-        var d = deduped[j];
-        // If normalized names match exactly, treat as duplicate
-        if (norm && d.norm === norm) {
-          // choose preferred name if appropriate
-          if (!preferName(d.name, name)) {
-            // keep existing
-          } else {
-            // replace existing representative with this one
-            deduped[j] = { item: s, norm: norm, name: name, lat: lat, lon: lon };
-          }
-          merged = true;
-          break;
-        }
-        // Else if coordinates exist and close enough, treat as duplicate
-        if (lat && lon && d.lat && d.lon) {
-          var dist = haversineMeters(lat, lon, d.lat, d.lon);
-          if (dist <= proximityThresholdMeters) {
-            // choose representative by preferName
-            if (preferName(name, d.name)) {
-              deduped[j] = { item: s, norm: norm || d.norm, name: name, lat: lat, lon: lon };
-            }
-            merged = true;
-            break;
-          }
-        }
-      }
-      if (!merged) {
-        deduped.push({ item: s, norm: norm, name: name, lat: lat, lon: lon });
-      }
-    }
-
-    // Final list: representative items
-    list = deduped.map(function(x) { return x.item; });
+    list = (data && data.data) || [];
   } else if (Helper.arrayContains(["pugetsound","newyork"], region)) {
     if (data && data.data) {
       list = data.data.list || data.data.stops;
@@ -115,13 +21,12 @@ Parse.stopList = function(data, region) {
 }
 
 Parse.stopDetail = function(data, stop, region) {
-  // Normalize stop object to { name, id, direction, title, subtitle, routes }
   var name = "";
   var id = "";
   var direction = "";
   var routes = [];
-  var title = "";  //title to display in menu
-  var subtitle = ""; //subtitle to display in menu
+  var title = "";
+  var subtitle = "";
 
   if (region === "pugetsound") {
     var routeIds = stop.routeIds || [];
@@ -141,7 +46,6 @@ Parse.stopDetail = function(data, stop, region) {
     }
     title = stop.name || '';
   } else if (region === "boston") {
-    // MBTA v3: stop is a resource object { id, attributes: { name, ... } }
     name = (stop && stop.attributes && stop.attributes.name) || '';
     id = (stop && stop.id) || '';
     title = name;
@@ -186,8 +90,6 @@ Parse.stopDetail = function(data, stop, region) {
       subtitle = subtitle + ", " + routes;
     }
   }
-
-  // common parsing for name, id and direction for these regions
   if (Helper.arrayContains(["pugetsound","newyork"], region)) {
     name = stop.name || '';
     id = stop.id || '';
@@ -214,7 +116,6 @@ Parse.stopDetail = function(data, stop, region) {
 }
 
 Parse.busNameInfo = function(data, busId) {
-  // search through references to find bus name to match busId
   var routes = (data && data.data && data.data.references && data.data.references.routes) || [];
   for (var i = 0; i < routes.length; i++) {
     if (routes[i].id === busId) {
@@ -224,7 +125,6 @@ Parse.busNameInfo = function(data, busId) {
   return null;
 }
 
-// parse bus stop list items from transit api request to return a list of stop ids
 Parse.stopIdsFromData = function(data, region) {
   var stopIds = [];
   var list = Parse.stopList(data, region) || [];
@@ -232,14 +132,13 @@ Parse.stopIdsFromData = function(data, region) {
   for (var i = 0; i < list.length; i++) {
     try {
       stopDetailInfo = Parse.stopDetail(data, list[i], region);
-      // Add to menu items array
       if (stopDetailInfo.title && stopDetailInfo.title.length > 0) {
         stopIds.push(stopDetailInfo.id ? stopDetailInfo.id.toString() : "");
       } else {
-        //console.log('title is blank for index ' + i);
+        console.log('title is blank for index ' + i);
       }
     } catch (e) {
-      //console.log('stopIdsFromData exception at index ' + i + ': ' + e);
+      console.log('stopIdsFromData exception at index ' + i + ': ' + e);
     }
   }
   return stopIds;
@@ -279,7 +178,7 @@ Parse.stopListData = function(data, region) {
 
   items.push({
     title: "Settings",
-    subtitle: "App settings"
+    subtitle: "BusGoodCarBad settings"
   })
 
   // Finally return whole array
@@ -287,12 +186,12 @@ Parse.stopListData = function(data, region) {
 }
 
 Parse.busRoutesData = function(busData, region, busStopId) {
-  // return JSON contains "busTimeItems": list of bus routes short name and real arrival time
   var busTimeItems = [];
   var nowTime = parseInt(Date.now());
   if (Helper.arrayContains(["pugetsound"], region)) {
     var arrivalsAndDepartures = (busData && busData.data && busData.data.entry && busData.data.entry.arrivalsAndDepartures) || [];
     for (var i = 0; i < arrivalsAndDepartures.length; i++)  {
+      // Add to busTimeItems array
       var routeShortName = arrivalsAndDepartures[i].routeShortName;
       var predictedArrivalTime = parseInt(arrivalsAndDepartures[i].predictedArrivalTime);
       var scheduledArrivalTime = parseInt(arrivalsAndDepartures[i].scheduledArrivalTime);
@@ -321,7 +220,6 @@ Parse.busRoutesData = function(busData, region, busStopId) {
           delayOrEarly  = -delayOrEarly;
           delayOrEarlyInfo = delayOrEarly + ' min early';
         }
-        // console.log(routeShortName + ' ' + scheduledArrivalTime);
         var tripHeadsign = arrivalsAndDepartures[i].tripHeadsign;
 
         busTimeItems.push({
@@ -355,12 +253,10 @@ Parse.busRoutesData = function(busData, region, busStopId) {
       try {
         var pred = arrivals[i];
         var attrs = pred.attributes || {};
-        // route id
         var routeRel = pred.relationships && pred.relationships.route && pred.relationships.route.data;
         var routeShortName = routeRel && routeRel.id ? routeRel.id : (attrs.route || '');
-        // prefer arrival_time, fall back to departure_time
         var predictedArrivalTime = attrs.arrival_time ? new Date(attrs.arrival_time).getTime() : (attrs.departure_time ? new Date(attrs.departure_time).getTime() : null);
-        // leave undefined if not present
+        // scheduled arrival may not be present in v3 prediction attributes
         var scheduledArrivalTime = attrs.scheduled ? Date.parse(attrs.scheduled) : (attrs.schedule_relationship ? null : null);
 
         if (!predictedArrivalTime) {
@@ -391,7 +287,6 @@ Parse.busRoutesData = function(busData, region, busStopId) {
               delayOrEarlyInfo = delayOrEarly + ' min early';
             }
           } else {
-            // no scheduled arrival available
             delayOrEarlyInfo = attrs.status || '';
           }
 
@@ -509,7 +404,6 @@ Parse.busRoutesData = function(busData, region, busStopId) {
     subtitle: "App settings"
   })
 
-  // Return whole array
   return busTimeItems;
 }
 

@@ -4,6 +4,5 @@ Tests.cases = {
   "New York": { "lat": 40.748433, "lon": -73.985656 },
   "Boston": { "lat": 42.3601, "lon": -71.0589 },
   "Portland": { "lat": 45.5200, "lon": -122.6819 },
-  "Vancouver": { "lat": 49.187706, "lon": -122.850060 },
 };
 module.exports = Tests;

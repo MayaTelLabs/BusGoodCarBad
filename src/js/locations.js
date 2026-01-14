@@ -4,7 +4,6 @@ var Helper = require('helper');
 // Handle location services, providing URL, geoRegions
 var Locations = {};
 
-// new geoRegion function based on coords
 Locations.geoRegion = function(coords) {
   var latitude = coords.lat;
   var longitude = coords.lon;
@@ -25,7 +24,6 @@ Locations.geoRegion = function(coords) {
 
 Locations.urlStops = function(coords) {
   var region = Locations.geoRegion(coords);
-  // console.log('reached Locations.urlStops! ' + region)
   var radius = Settings.data()["searchRadius"] || 260;
   var latlon = "&lat=" + coords.lat + "&lon=" + coords.lon;
   if (Helper.arrayContains(["pugetsound","newyork"], region)) {
@@ -35,38 +33,34 @@ Locations.urlStops = function(coords) {
   } else if (region === "portland") {
     return Locations.urlBus("stopsForLocations", region) + KEY[region] + "&ll=" + coords.lat + "," + coords.lon + "&json=true&meters=" + radius;
   } else if (region === "vancouver") {
+    if (!KEY[region]) { return null; }
     return Locations.urlBus("stopsForLocations", region) + KEY[region] + "&lat=" + coords.lat + "&long=" + coords.lon + "&radius=" + radius;
   }
   return null;
 }
 
 Locations.urlBus = function(type, region) {
-  urlSource = {
+  // central mapping of endpoints (host/path fragments)
+  var urlSource = {
     "stopsForLocations": {
       "pugetsound": "api.pugetsound.onebusaway.org/api/where/stops-for-location.json?key=",
-      "newyork":
-      "bustime.mta.info/api/where/stops-for-location.json?key=",
-      "boston":
-      "realtime.mbta.com/developer/api/v2/stopsbylocation?api_key=",
-      "portland":
-      "developer.trimet.org/ws/V1/stops?appID=",
-      "vancouver":
-      "api.translink.ca/rttiapi/v1/stops?apikey="
+      "newyork": "bustime.mta.info/api/where/stops-for-location.json?key=",
+      "boston": "realtime.mbta.com/developer/api/v2/stopsbylocation?api_key=",
+      "portland": "developer.trimet.org/ws/V1/stops?appID=",
+      "vancouver": "api.translink.ca/rttiapi/v1/stops?apikey="
     },
     "routesForStops": {
-      "pugetsound":
-      "api.pugetsound.onebusaway.org/api/where/arrivals-and-departures-for-stop/",
-      "newyork":
-      "bustime.mta.info/api/siri/stop-monitoring.json?key=",
-      "boston":
-      "realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=",
-      "portland":
-      "developer.trimet.org/ws/v2/arrivals?appID=",
-      "vancouver":
-      "api.translink.ca/rttiapi/v1/stops/"
+      "pugetsound": "api.pugetsound.onebusaway.org/api/where/arrivals-and-departures-for-stop/",
+      "newyork": "bustime.mta.info/api/siri/stop-monitoring.json?key=",
+      "boston": "realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=",
+      "portland": "developer.trimet.org/ws/v2/arrivals?appID=",
+      "vancouver": "api.translink.ca/rttiapi/v1/stops/"
     }
+  };
+  if (urlSource[type] && urlSource[type][region]) {
+    return "https://" + urlSource[type][region];
   }
-  return "http://" + urlSource[type][region]
+  return null;
 }
 
 Locations.urlRoutesForStops = function(region, busStopId) {
@@ -79,6 +73,7 @@ Locations.urlRoutesForStops = function(region, busStopId) {
   } else if (region === "portland") {
     return Locations.urlBus("routesForStops", region) + KEY[region] + "&locIDs=" + busStopId + "&json=true";
   } else if (region === "vancouver") {
+    if (!KEY[region]) { return null; }
     return Locations.urlBus("routesForStops", region) + busStopId + "/estimates?apikey=" + KEY[region] + "&count=3&timeframe=60";
   }
   return null;

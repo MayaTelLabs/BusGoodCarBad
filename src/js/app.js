@@ -12,6 +12,7 @@ var Helper = require('helper');
 var Save = require('save');
 var Detail = require('detail');
 var Parse = require('parse');
+var messageKeys = require('message_keys');
 
 // Set a configurable with the open callback
 Settings.config(
@@ -31,7 +32,7 @@ navigator.geolocation.getCurrentPosition(locationSuccess, locationError);
 
 function locationError(err) {
   console.log('location error (' + err.code + '): ' + err.message);
-  Detail.add('Location Error', "Sorry, we can not determine your location. Make sure turn on location services for Pebble Time app on your phone.").show();
+  Detail.add('Location Error', "Sorry, we can not determine your location. Make sure turn on location services for Pebble app on your phone.").show();
 }
 
 // When location request succeeds
@@ -40,23 +41,18 @@ function locationSuccess(position) {
     "lat": position.coords.latitude,
     "lon": position.coords.longitude
   }
-  // coords = Tests.cases['Boston2'];
+  // coords = Tests.cases['Boston'];
   // coords = Tests.cases['Seattle'];
   // coords = Tests.cases['New York'];
   // coords = Tests.cases['Portland'];
   // coords = Tests.cases['Vancouver'];
-  // coords = Tests.cases['Vancouver2'];
   var currentGeoRegion = Locations.geoRegion(coords);
   console.log(currentGeoRegion);
   var currentStopIds = showStopListMenu(coords, false, false);
-  // console.log("currentStopIds, " + currentStopIds);
-  // Check if any favorite locations is nearby
   var favoriteData = Settings.data()["favorite_list"] || [];
   var favoritePageToShow = false;
   for (var i = 0; i < favoriteData.length; i++) {
-    // console.log( i + "th favorite stop id is " + favoriteData[i].stopId);
     if (Helper.arrayContains(currentStopIds, favoriteData[i].stopId)) {
-      // console.log("matched favorite stop id is " + favoriteData[i].stopId);
       showBusRoutesMenu(favoriteData[i].stopId, favoriteData[i].name, favoriteData[i].direction, currentGeoRegion);
       favoritePageToShow = true;
     }
@@ -75,7 +71,6 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
   var stopIdList = [];
   if (typeof asyncMode === 'undefined') { asyncMode = true ; }
   if (typeof showMode === 'undefined') { showMode = true ; }
-  // console.log('asyncMode is ' + asyncMode)
   console.log("urlStops is " + url);
 
   // If we couldn't build a URL for these coords/region, show the no-bus menu
@@ -93,7 +88,6 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
     },
     function(data) {
       // Create an array of Menu items
-      // console.log(JSON.stringify(data));
       var menuItems = Parse.stopListData(data,region);
       var favoriteData = Settings.data()["favorite_list"] || [];
       if (favoriteData.length > 0) {
@@ -102,7 +96,6 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
         })
       }
       stopIdList = Parse.stopIdsFromData(data,region);
-      // console.log("stopIdList " + stopIdList);
       if (showMode) {
         // Construct Menu to show to user
         var resultsMenu = new UI.Menu({
@@ -127,18 +120,15 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
           } else if (e.item.title === "Favorite stops") {
             showFavoriteStops(region);
           } else {
-            // console.log(JSON.stringify(menuItems[e.itemIndex]));
             var busStopName = menuItems[e.itemIndex].stopName;
             var busStopId = menuItems[e.itemIndex].busStopId;
             var busStopDirection = menuItems[e.itemIndex].busStopdirection;
             showBusRoutesMenu(busStopId, busStopName, busStopDirection, region);
           }
-        }); // end resultsMenu.on
+        });
         
         // Add an action for Long click
         resultsMenu.on('longSelect', function(e) {
-          // console.log("long click received");
-          // console.log(JSON.stringify(menuItems[e.itemIndex]));
           var busStopName = menuItems[e.itemIndex].stopName;
           var busStopId = menuItems[e.itemIndex].busStopId;
           var busStopDirection = menuItems[e.itemIndex].busStopdirection;
@@ -146,9 +136,8 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
             busStopDirection = '\n(' + busStopDirection + ' bound)';
           }
           Detail.add('Stop Detail', busStopName + busStopDirection + '\n' + 'Stop ID: ' + busStopId.split("_").pop(-1)).show();
-        }); // end resultsMenu.on
+        });
 
-        // Register for 'tap' events
         resultsMenu.on('accelTap', function(e) {
           ajax(
             {
@@ -157,7 +146,6 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
               headers: { 'Accept': 'application/json' }
             },
             function(data) {
-              // Update the Menu's first section
               menuItems = Parse.stopListData(data,region);
               if (favoriteData.length > 0) {
                 menuItems.unshift({
@@ -165,7 +153,6 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
                 })
               }
               resultsMenu.items(0, menuItems);
-              // console.log(JSON.stringify(Parse.stopListData(data,region)));
             },
             function(error) {
               console.log('Download failed: ' + error);
@@ -190,11 +177,9 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
 };
 
 var showBusRoutesMenu = function(busStopId, busStopName, busStopDirection, region, asyncMode) {
-  // show bus routes for a given stop id
   if (typeof asyncMode === 'undefined') { asyncMode = true; }
   var busStopURL = Locations.urlRoutesForStops(region, busStopId);
   console.log("busStopURL is " + busStopURL);
-  // var region = Locations.geoRegion(coords);
   console.log(busStopURL);
   ajax(
     {
@@ -218,17 +203,14 @@ var showBusRoutesMenu = function(busStopId, busStopName, busStopDirection, regio
       detailRoutes.show();
       Statics.welcomeWindow.hide();
 
-      // Add an action for select save as favorite
       detailRoutes.on('select', function(e) {
         if (e.item.title === "Add to favorite") {
           var data = Settings.data();
-          //Settings.data("favorite_list",null);
           var stopList = data["favorite_list"] || [];
           var stopIdList = [];
           for(var i = 0; i < stopList.length; i++) {
             stopIdList.push(stopList[i].stopId);
           }
-          // console.log(stopIdList);
           if (Save.favoriteStopListContains(busStopId)) {
             showfavoriteConfirmPage(busStopId,busStopName,busStopDirection);
           } else {
@@ -263,7 +245,6 @@ var showBusRoutesMenu = function(busStopId, busStopName, busStopDirection, regio
         } else {
           showBusDetailPage(e,region);
           // Pause development for bus alert system
-          // showBusTrackingPage(latitude, longitude,Parse.busRoutesData(busData).busDetails[e.itemIndex]);
         }
       });
 
@@ -294,8 +275,6 @@ var showBusRoutesMenu = function(busStopId, busStopName, busStopDirection, regio
           function(updatedBusData) {
             // Update the bus time list
             detailRoutes.items(0, Parse.busRoutesData(updatedBusData, region, busStopId));
-            // console.log(JSON.stringify(Parse.busRoutesData(updatedBusData, region, busStopId)["busTimeItems"]));
-            // console.log(JSON.stringify(Parse.busRoutesData(updatedBusData, region, busStopId)["busDetails"]));
           },
           function(busDataError) {
             console.log('Download failed: ' + busDataError);
@@ -317,11 +296,9 @@ var showBusRoutesMenu = function(busStopId, busStopName, busStopDirection, regio
 
 var showBusDetailPage = function(e, region) {
   var detail = e.item.subtitle.split(",");
-  // string for describing at which station in the detail card
   var stopNameDescription = 'At:' + Helper.addSpaceBefore(e.section.title)
   if (detail[1]) {
     Detail.add(e.item.title, detail[0] + '\nTo:' + Helper.addSpaceBefore(detail[1]) + '\n' + stopNameDescription).show();
-    // console.log('reach detail[1]')
   } else {
     Detail.add(e.item.title, 'To:' + Helper.addSpaceBefore(detail[0]) + '\n' +stopNameDescription).show();
   }
@@ -352,7 +329,7 @@ var showBusTrackingPage = function(latitude, longitude, busDetail) {
 }
 
 var notifyBusApproaching = function(latitude, longitude, busDetail,timer) {
-  timer = parseInt(timer) // mins
+  timer = parseInt(timer)
   console.log(urlRoutesForBus(latitude, longitude, busDetail));
   var interval = window.setInterval(function() {
     ajax(
@@ -469,10 +446,8 @@ var showFavoriteStops = function() {
   favoriteStopsPage.show();
   favoriteStopsPage.on('select', function(e) {
     showBusRoutesMenu(favoriteStopListData[e.itemIndex].stopId, favoriteStopListData[e.itemIndex].name, favoriteStopListData[e.itemIndex].direction, favoriteStopListData[e.itemIndex].region);
-  // favoriteStopsPage.hide();
   });
   favoriteStopsPage.on('longSelect', function(e) {
-    // console.log("long click received");
     var busStopName = favoriteStopListData[e.itemIndex].name;
     var busStopId = favoriteStopListData[e.itemIndex].stopId;
     var busStopDirection = favoriteStopListData[e.itemIndex].direction;
@@ -480,7 +455,6 @@ var showFavoriteStops = function() {
       busStopDirection = '\n(' + busStopDirection + ' bound)';
     }
     Detail.add('Stop Detail', busStopName + busStopDirection + '\n' + 'Stop ID: ' + busStopId.split("_").pop(-1)).show();
-  // favoriteStopsPage.hide();
   });
 };
 
@@ -512,7 +486,6 @@ var showRadiusSettings = function() {
   });
 };
 
-// NEW: showNoBusPage replaced with a menu offering actions (keeps existing messages)
 var showNoBusPage = function() {
   var noBusItems = [
     { title: 'Unsupported area!' },
@@ -539,7 +512,6 @@ var showNoBusPage = function() {
     });
       c.show();
   } else if (title.indexOf('Default') === 0) {
-      // Persist test mode and show Seattle test coords
       Settings.data('use_test_coords', true);
       noBusMenu.hide();
       var coords = Tests.cases['Seattle'];
@@ -551,7 +523,6 @@ var showNoBusPage = function() {
   });
 };
 
-// Helper: show a menu of available test regions (from Tests.cases)
 var showTestRegionsMenu = function() {
   var items = [];
   for (var k in Tests.cases) {
@@ -571,7 +542,6 @@ var showTestRegionsMenu = function() {
 
   testMenu.on('select', function(e) {
     var sel = e.item.title;
-    // Persist test mode, then show stop list for selected coords
     Settings.data('use_test_coords', true);
     var coords = Tests.cases[sel];
     testMenu.hide();
@@ -605,7 +575,6 @@ var deleteFavoriteStop = function(busStopId, detailRoutes) {
           function locationError(err) {
             console.log('location error (' + err.code + '): ' + err.message);
           }
-          // When location request succeeds
           function locationSuccess(position) {
             var coords = {
               "lat": position.coords.latitude,
