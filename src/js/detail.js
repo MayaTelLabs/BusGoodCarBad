@@ -12,21 +12,24 @@ Detail.add = function(title_text, text, title_size) {
       scrollable: true
     });
     return card;
-  } else if (platform.version() === 'aplite' || platform.version() === 'basalt') {
+
+  } else {
     var page = new UI.Window({ scrollable: true, status: { color: 'white', separator: false } });
-    // Create a background Rect
+
     var bgRect = new UI.Rect({
       position: new Vector2(0, 0),
       size: new Vector2(144, 230),
       backgroundColor: 'white'
     });
     page.add(bgRect);
+
     var image = new UI.Image({
       position: new Vector2(10, 10),
       size: new Vector2(15, 15),
-      image: 'images/menu_icon.png'
+      image: 'images/menu-icon-25x25.png'
     });
     page.add(image);
+
     var title = new UI.Text({
      position: new Vector2(35, 5),
      size: new Vector2(109, 12),
@@ -35,11 +38,13 @@ Detail.add = function(title_text, text, title_size) {
      textOverflow:'wrap',
      color: 'black'
     });
+
     if (title_size === "title_size_big") {
       title.font('gothic-24-bold');
       title.position(new Vector2(35, 2));
     }
     page.add(title);
+
     var textfield = new UI.Text({
      position: new Vector2(3, 30),
      size: new Vector2(136, 200),
@@ -50,6 +55,7 @@ Detail.add = function(title_text, text, title_size) {
      textAlign: 'left'
     });
     page.add(textfield);
+
     return page;
   }
 }

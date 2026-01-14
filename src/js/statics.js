@@ -4,12 +4,16 @@ var Detail = require('detail');
 // Create a nice waiting card for user while waiting
 var Statics = {};
 
-Statics.welcomeWindow = Detail.add("CatchOneBus", "CatchOneBus is now on Facebook and Twitter. Like and follow us! Thanks! :)", "title_size_big")
+Statics.welcomeWindow = Detail.add("BusGoodCarBad", "Train good. Bus good. Boat good. Car bad.")
 
-Statics.aboutPage = Detail.add("CatchOneBus", "CatchOneBus aims to check your transit by a simple click on your wrist, app developed by Yaoyu Yang and logo by Dian Zhang. Support us by making a donation to yaoyu@uw.edu or just give us a like!")
+Statics.aboutPage = Detail.add("BusGoodCarBad", "BusGoodCarBad developed by MayaTel Labs, 2026. thanks to the WTYP crew for the name. CatchOneBus developed by Yaoyu Yang, 2015 - 2017. logo by Dian Zhang.")
 
 Statics.showVersionPage = function() {
   var versionInfos = [{
+   title: "3.0",
+  subtitle: "first BusGoodCarBad release (2026). removed Tampa support, disabled Boston/Vancouver support."
+  },
+  { 
     title: "2.4",
     subtitle: "Add bus route number in subtitle."
   },

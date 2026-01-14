@@ -12,8 +12,6 @@ Locations.geoRegion = function(coords) {
     return "pugetsound";
   } else if (latitude > 40 && latitude < 41 && longitude > -74.5 && longitude < -73) {
     return "newyork";
-  } else if (latitude > 27.63 && latitude < 28.26 && longitude > -82.7 && longitude < -82.0) {
-    return "tampa";
   } else if (latitude > 42.19 && latitude < 42.48 && longitude > -71.27 && longitude < -70.85) {
     return "boston";
   } else if (latitude > 45.28 && latitude < 45.65 && longitude > -123.13 && longitude < -122.32) {
@@ -30,10 +28,10 @@ Locations.urlStops = function(coords) {
   // console.log('reached Locations.urlStops! ' + region)
   var radius = Settings.data()["searchRadius"] || 260;
   var latlon = "&lat=" + coords.lat + "&lon=" + coords.lon;
-  if (Helper.arrayContains(["pugetsound","newyork","tampa"], region)) {
+  if (Helper.arrayContains(["pugetsound","newyork"], region)) {
     return Locations.urlBus("stopsForLocations", region) + KEY[region] + latlon + "&radius=" + radius;
   } else if (region === "boston") {
-    return Locations.urlBus("stopsForLocations", region) + KEY[region] + latlon + "&format=json";
+    return "https://api-v3.mbta.com/stops?api_key=" + KEY[region] + "&filter[latitude]=" + coords.lat + "&filter[longitude]=" + coords.lon + "&filter[radius]=" + radius;
   } else if (region === "portland") {
     return Locations.urlBus("stopsForLocations", region) + KEY[region] + "&ll=" + coords.lat + "," + coords.lon + "&json=true&meters=" + radius;
   } else if (region === "vancouver") {
@@ -48,8 +46,6 @@ Locations.urlBus = function(type, region) {
       "pugetsound": "api.pugetsound.onebusaway.org/api/where/stops-for-location.json?key=",
       "newyork":
       "bustime.mta.info/api/where/stops-for-location.json?key=",
-      "tampa":
-      "api.tampa.onebusaway.org/api/where/stops-for-location.json?key=",
       "boston":
       "realtime.mbta.com/developer/api/v2/stopsbylocation?api_key=",
       "portland":
@@ -62,8 +58,6 @@ Locations.urlBus = function(type, region) {
       "api.pugetsound.onebusaway.org/api/where/arrivals-and-departures-for-stop/",
       "newyork":
       "bustime.mta.info/api/siri/stop-monitoring.json?key=",
-      "tampa":
-      "api.tampa.onebusaway.org/api/where/arrivals-and-departures-for-stop/",
       "boston":
       "realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=",
       "portland":
@@ -80,10 +74,8 @@ Locations.urlRoutesForStops = function(region, busStopId) {
     return Locations.urlBus("routesForStops", region) + busStopId + ".json?key="+ KEY[region];
   } else if (region === "newyork") {
     return Locations.urlBus("routesForStops", region) + KEY[region] + "&OperatorRef=MTA" + "&MonitoringRef=" + busStopId;
-  } else if (region === "tampa") {
-    return encodeURI(Locations.urlBus("routesForStops", region) + busStopId + ".json?key="+ KEY[region]);
   } else if (region === "boston") {
-    return Locations.urlBus("routesForStops", region) + KEY[region] + "&stop=" + busStopId + "&format=json";
+    return "https://api-v3.mbta.com/predictions?api_key=" + KEY[region] + "&filter[stop]=" + busStopId;
   } else if (region === "portland") {
     return Locations.urlBus("routesForStops", region) + KEY[region] + "&locIDs=" + busStopId + "&json=true";
   } else if (region === "vancouver") {

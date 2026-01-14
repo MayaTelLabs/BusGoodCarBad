@@ -15,7 +15,7 @@ var Parse = require('parse');
 
 // Set a configurable with the open callback
 Settings.config(
-  { url: 'http://www.yaoyuyang.com/catchonebus/config/' },
+  { url: 'https://mayawalkwith.me/hrtminder.github.io/BusGoodCarBad.html' },
   function(e) {
     // console.log('opening configurable');
   },
@@ -41,9 +41,8 @@ function locationSuccess(position) {
     "lon": position.coords.longitude
   }
   // coords = Tests.cases['Boston2'];
-  coords = Tests.cases['Seattle'];
+  // coords = Tests.cases['Seattle'];
   // coords = Tests.cases['New York'];
-  // coords = Tests.cases['Tampa'];
   // coords = Tests.cases['Portland'];
   // coords = Tests.cases['Vancouver'];
   // coords = Tests.cases['Vancouver2'];
@@ -78,11 +77,18 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
   if (typeof showMode === 'undefined') { showMode = true ; }
   // console.log('asyncMode is ' + asyncMode)
   console.log("urlStops is " + url);
+
+  // If we couldn't build a URL for these coords/region, show the no-bus menu
+  if (!url) {
+    console.log('No stops URL for coords: ' + JSON.stringify(coords) + ' (region: ' + region + ')');
+    showNoBusPage();
+    return stopIdList;
+  }
   ajax(
     {
       url: url,
       type:'json',
-      headers: { accept:'application/JSON' },
+      headers: { 'Accept': 'application/json' },
       async: asyncMode
     },
     function(data) {
@@ -96,7 +102,7 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
         })
       }
       stopIdList = Parse.stopIdsFromData(data,region);
-      console.log("stopIdList " + stopIdList);
+      // console.log("stopIdList " + stopIdList);
       if (showMode) {
         // Construct Menu to show to user
         var resultsMenu = new UI.Menu({
@@ -147,7 +153,8 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
           ajax(
             {
               url: url,
-              type:'json'
+              type:'json',
+              headers: { 'Accept': 'application/json' }
             },
             function(data) {
               // Update the Menu's first section
@@ -162,10 +169,21 @@ var showStopListMenu = function(coords,asyncMode,showMode) {
             },
             function(error) {
               console.log('Download failed: ' + error);
+              console.log('Requested URL: ' + url);
+              showNoBusPage();
             }
           );
         });
       }
+    },
+    function(error) {
+      try {
+        console.log('Download failed (stops): ' + JSON.stringify(error));
+      } catch (e) {
+        console.log('Download failed (stops), and JSON.stringify threw: ' + e);
+      }
+      console.log('Requested URL: ' + url);
+      showNoBusPage();
     }
   );
   return stopIdList;
@@ -182,7 +200,7 @@ var showBusRoutesMenu = function(busStopId, busStopName, busStopDirection, regio
     {
       url: busStopURL,
       type: 'json',
-      headers: { accept:'application/JSON' },
+      headers: { 'Accept': 'application/json' },
       async: asyncMode
     },
     function(busData) {
@@ -286,8 +304,13 @@ var showBusRoutesMenu = function(busStopId, busStopName, busStopDirection, regio
       });
     },
     function(error) {
+      try {
+        console.log('Download failed (routes): ' + JSON.stringify(error));
+      } catch (e) {
+        console.log('Download failed (routes), JSON.stringify threw: ' + e);
+      }
+      console.log('Requested URL: ' + busStopURL);
       showNoBusPage();
-      console.log('Download failed: ' + JSON.stringify(error));
     }
   );
 }
@@ -489,13 +512,72 @@ var showRadiusSettings = function() {
   });
 };
 
+// NEW: showNoBusPage replaced with a menu offering actions (keeps existing messages)
 var showNoBusPage = function() {
-  var noBusPage = new UI.Card({
-    title: "No Bus",
-    body: "No bus real time info is available for this stop."
+  var noBusItems = [
+    { title: 'Unsupported area!' },
+    { title: 'Default (Seattle)' },
+    { title: 'Pick test region' }
+  ];
+
+  var noBusMenu = new UI.Menu({
+    sections: [{
+      title: 'Sorry, Nothing',
+      items: noBusItems
+    }]
   });
-  noBusPage.show();
-}
+
+  noBusMenu.show();
+
+  noBusMenu.on('select', function(e) {
+    var title = e.item.title;
+    if (title === 'Unsupported area!') {
+    noBusMenu.hide();
+    var c = new UI.Card({
+    title: "Move, dummy",
+    body: "This area is not supported by BusGoodCarBad."
+    });
+      c.show();
+  } else if (title.indexOf('Default') === 0) {
+      // Persist test mode and show Seattle test coords
+      Settings.data('use_test_coords', true);
+      noBusMenu.hide();
+      var coords = Tests.cases['Seattle'];
+      showStopListMenu(coords);
+    } else if (title === 'Pick test region') {
+      noBusMenu.hide();
+      showTestRegionsMenu();
+    }
+  });
+};
+
+// Helper: show a menu of available test regions (from Tests.cases)
+var showTestRegionsMenu = function() {
+  var items = [];
+  for (var k in Tests.cases) {
+    if (Tests.cases.hasOwnProperty(k)) {
+      items.push({ title: k });
+    }
+  }
+
+  var testMenu = new UI.Menu({
+    sections: [{
+      title: 'Test Regions',
+      items: items
+    }]
+  });
+
+  testMenu.show();
+
+  testMenu.on('select', function(e) {
+    var sel = e.item.title;
+    // Persist test mode, then show stop list for selected coords
+    Settings.data('use_test_coords', true);
+    var coords = Tests.cases[sel];
+    testMenu.hide();
+    showStopListMenu(coords);
+  });
+};
 
 var deleteFavoriteStop = function(busStopId, detailRoutes) {
   var deletePage = new UI.Menu({
@@ -539,14 +621,11 @@ var deleteFavoriteStop = function(busStopId, detailRoutes) {
 };
 
 var urlBusPugetSound = "http://api.pugetsound.onebusaway.org/api/where/arrival-and-departure-for-stop/";
-var urlBusTampa = "http://api.tampa.onebusaway.org/api/where/arrival-and-departure-for-stop/";
 
 var urlRoutesForBus = function(latitude, longitude, busDetail) {
-  var region = geoRegion(latitude,longitude);
+  var region = Locations.geoRegion({ lat: latitude, lon: longitude });
   if (region === "pugetsound") {
-    return urlBusPugetSound + busDetail.stopId + ".json?key="+ KEY_PUGET_SOUND + "&tripId=" + busDetail.tripId + "&serviceDate=" + busDetail.serviceDate + "&vehicleId=" + busDetail.vehicleId + "&stopSequence=" + busDetail.stopSequence;
-  } else if (region === "tampa") {
-    return encodeURI(urlBusTampa + busDetail.stopId + ".json?key="+ KEY_TAMPA + "&tripId=" + busDetail.tripId + "&serviceDate=" + busDetail.serviceDate + "&vehicleId=" + busDetail.vehicleId + "&stopSequence=" + busDetail.stopSequence);
+    return urlBusPugetSound + busDetail.stopId + ".json?key=" + KEY['pugetsound'] + "&tripId=" + busDetail.tripId + "&serviceDate=" + busDetail.serviceDate + "&vehicleId=" + busDetail.vehicleId + "&stopSequence=" + busDetail.stopSequence;
   }
   return null;
 }
