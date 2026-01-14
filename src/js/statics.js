@@ -4,7 +4,7 @@ var Detail = require('detail');
 // Create a nice waiting card for user while waiting
 var Statics = {};
 
-Statics.welcomeWindow = Detail.add("BusGoodCarBad", "Train good. Bus good. Boat good. Car bad.")
+Statics.welcomeWindow = Detail.add("BusGoodCarBad", "Train good. Bus good. Boat good. Streetcar good. Trolley good. Car bad.")
 
 Statics.aboutPage = Detail.add("BusGoodCarBad", "BusGoodCarBad developed by MayaTel Labs, 2026. thanks to the WTYP crew for the name. CatchOneBus developed by Yaoyu Yang, 2015 - 2017. logo by Dian Zhang.")
 

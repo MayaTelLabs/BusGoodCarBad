@@ -2,7 +2,7 @@
 
 a OneBusAway client, fixed and updated for the next generation of Pebble by maya ventura/MayaTel Labs.
 
-[Rebble App Store Link](www.place.holder/applications/)
+[Rebble App Store Link](https://apps.rebble.io/en_US/application/6967f98ca5c72300090b149a)
 
 Boston, MA/MBTA support is currently limited - the new v3 API is implemented, but due to differences in how v3 presents data it will show way too many stations. This is a parsing issue and will be fixed (I have already attempted to mitigate it).
 
