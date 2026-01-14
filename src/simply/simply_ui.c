@@ -17,14 +17,6 @@
 
 #include <pebble.h>
 
-#ifndef UNUSED_ATTR
-# if defined(__GNUC__)
-#  define UNUSED_ATTR __attribute__((unused))
-# else
-#  define UNUSED_ATTR
-# endif
-#endif
-
 struct __attribute__((__packed__)) SimplyStyle {
   const char *title_font;
   const char *subtitle_font;
@@ -168,12 +160,7 @@ void simply_ui_set_text_color(SimplyUi *self, SimplyUiTextfieldId textfield_id, 
   mark_dirty(self);
 }
 
-/* Marked UNUSED_ATTR because this helper is only referenced in the round-device
- * path via a macro; on some builds the function may be left unreferenced which
- * triggers -Wunused-function. Keeping the function but marking it unused avoids
- * the warning while preserving the implementation for builds that do use it.
- */
-static void UNUSED_ATTR enable_text_flow_and_paging(SimplyUi *self, GTextAttributes *text_attributes,
+static void enable_text_flow_and_paging(SimplyUi *self, GTextAttributes *text_attributes,
                                         const GRect *box) {
   graphics_text_attributes_enable_paging_on_layer(
       text_attributes, (Layer *)self->window.scroll_layer, box, TEXT_FLOW_DEFAULT_INSET);
